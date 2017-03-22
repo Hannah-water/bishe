@@ -9,7 +9,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 #导入数值计算库
 import numpy as np
-
+#导入多进程库
+from multiprocessing import Pool
+#解决python线程池调用类方法不执行问题
+import copy_reg
+import types
+#解决python线程池调用类方法不执行问题
+def _reduce_method(m):
+    if m.im_self is None:
+        return getattr, (m.im_class, m.im_func.func_name)
+    else:
+        return getattr, (m.im_self, m.im_func.func_name)
+copy_reg.pickle(types.MethodType, _reduce_method)
 
 #中原地产爬虫类
 class ZYDC:
@@ -22,8 +33,10 @@ class ZYDC:
 		self.page = page
 		#从第一页开始
 		#self.pageIndex = 1
-		#所有页面的内容
+		#存放所有页面内容
 		self.html = ""
+		#所有页面的内容,BeautifulSoup对象
+		self.zy = BeautifulSoup('', 'html.parser')
 		#存放房源价格
 		self.hp = []
 		#存放房源信息
@@ -41,32 +54,33 @@ class ZYDC:
 		try:
 			url = self.baseUrl + self.page + str(pageIndex) + '/'
 			request = requests.get(url=url, headers=self.headers)
-			html = request.content
-			return html
+			htm = request.content
+			return htm
 		except Exception as e:
 			if hasattr(e, "reason"):
 				print "连接中原地产失败，错误原因",e.reason
 				return None
 
 	#获取所有页面的内容
-	def getAllPage(self):
-		self.html = self.getPage(1)
-		#解析抓取的页面内容
-		zy = BeautifulSoup(self.html, 'html.parser')
-		#print zy
-		return zy
+	def getAllPage(self,pageIndex):
+		html = self.getPage(pageIndex)
+		return html
+
+	#解析抓取的页面内容
+	def parserPage(self):
+		self.zy = BeautifulSoup(self.html, 'html.parser')
 
 	#获取房源价格
 	def getPrice(self):
-		housePrice = self.getAllPage().find_all('p', attrs={'class':'price-nub cRed'})
+		housePrice = self.zy.find_all('p', attrs={'class':'price-nub cRed'})
 		for x in housePrice:
 			price = x.get_text()
 			self.hp.append(price)
 
 	#获取房源信息
 	def getInfo(self):
-		houseInfo1 = self.getAllPage().find_all('p', attrs={'class':'f14 f000 mb_10'})
-		houseInfo2 = self.getAllPage().find_all('p', attrs={'class':'f7b mb_10'})
+		houseInfo1 = self.zy.find_all('p', attrs={'class':'f14 f000 mb_10'})
+		houseInfo2 = self.zy.find_all('p', attrs={'class':'f7b mb_10'})
 		for y in houseInfo1:
 			house1 = y.a.string + '|' + y.span.string + '|' + y.span.next_sibling.string
 			self.hi1.append(house1)
@@ -77,7 +91,7 @@ class ZYDC:
 	#获取每一个房源具体信息
 	def getSpecificInfo(self):
 		#获取每一个房源具体信息链接
-		houseHref = self.getAllPage().find_all('a', attrs={'class':'cBlueB'})
+		houseHref = self.zy.find_all('a', attrs={'class':'cBlueB'})
 		#print houseHref
 		#获取每一个房源具体信息
 		for z in houseHref:
@@ -93,18 +107,40 @@ class ZYDC:
 				self.hsi.append(follow)
 
 	#开始方法
-	def display(self):
+	def main(self,pageIndex):
+		pool = Pool(processes=2)
+		#for page in pageIndex:
+		#	pool.apply_async(self.getAllPage, (page,))
+		self.html = ''.join(pool.map(self.getAllPage, pageIndex))
+		pool.close()
+		pool.join()
+
+		#totalIndex = pageIndex
+		#for pi in totalIndex:
+		#	self.getAllPage(pi)
+		self.parserPage()
+		#self.getAllPage()
 		self.getPrice()
 		self.getInfo()
 		self.getSpecificInfo()
+		#print multiprocessing.cpu_count()
 
-
-#设置列表页固定部分
-url = 'http://sz.centanet.com/ershoufang/'
-#设置页面可变部分
-page = ('g')
-spider = ZYDC(url,page)
-spider.display()
+if __name__ == "__main__":
+	#设置列表页固定部分
+	url = 'http://sz.centanet.com/ershoufang/'
+	#设置页面可变部分
+	page = ('g')
+	#运行爬虫类
+	spider = ZYDC(url,page)
+	#获取第一页的所有代码
+	html1 = spider.getPage(1)
+	#获取房源总数量
+	houseNum = re.findall(r".*?<span.*?cRed.*?<em>(.*?)</em>", html1)
+	#获取总页数
+	TotalPage = int(houseNum[0])/25 + 1
+	#每个页面
+	TotalPages = [page for page in range(1,3)]
+	spider.main(TotalPages)
 
 #创建数据表
 array = {'followinfo':spider.hsi, 'houseprice':spider.hp, 'houseinfo1':spider.hi1, 'houseinfo2':spider.hi2}
