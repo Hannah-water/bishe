@@ -9,12 +9,14 @@ import pandas as pd
 import matplotlib.pyplot as plt
 #导入数值计算库
 import numpy as np
+#导入mysql.py，连接数据库
+import mysql
 #导入多进程库
 from multiprocessing import Pool
-#解决python线程池调用类方法不执行问题
+#解决python进程池调用类方法不执行问题
 import copy_reg
 import types
-#解决python线程池调用类方法不执行问题
+#解决python进程池调用类方法不执行问题
 def _reduce_method(m):
     if m.im_self is None:
         return getattr, (m.im_class, m.im_func.func_name)
@@ -34,9 +36,11 @@ class ZYDC:
 		#从第一页开始
 		#self.pageIndex = 1
 		#存放所有页面内容
-		self.html = ""
+		#self.html = ""
 		#所有页面的内容,BeautifulSoup对象
 		self.zy = BeautifulSoup('', 'html.parser')
+		#存放房源链接
+		self.hu = []
 		#存放房源价格
 		self.hp = []
 		#存放房源信息
@@ -67,8 +71,8 @@ class ZYDC:
 		return html
 
 	#解析抓取的页面内容
-	def parserPage(self):
-		self.zy = BeautifulSoup(self.html, 'html.parser')
+	#def parserPage(self):
+	#	self.zy = BeautifulSoup(self.html, 'html.parser')
 
 	#获取房源价格
 	def getPrice(self):
@@ -96,6 +100,7 @@ class ZYDC:
 		#获取每一个房源具体信息
 		for z in houseHref:
 			house_url = 'http://sz.centanet.com' + z.get('href')
+			self.hu.append(house_url)
 			request = requests.get(url=house_url, headers=self.headers)
 			house_html = request.content
 			zy_fang = BeautifulSoup(house_html, 'html.parser')
@@ -106,26 +111,49 @@ class ZYDC:
 				follow = x.li.find_next_sibling().get_text().replace('\n','')
 				self.hsi.append(follow)
 
-	#开始方法
+	#主函数
 	def main(self,pageIndex):
-		pool = Pool(processes=2)
+		f_html = open('houseHtml.txt','w')
+		#进程池，8个进程并发
+		pool = Pool(processes=4)
 		#for page in pageIndex:
-		#	pool.apply_async(self.getAllPage, (page,))
-		self.html = ''.join(pool.map(self.getAllPage, pageIndex))
+		#	print pool.apply_async(self.getAllPage, (pageIndex,))
+		#join()将列表转为字符串
+		#poolhtml = pool.map(self.getAllPage, pageIndex)
+		f_html.write(''.join(pool.map(self.getAllPage, pageIndex)))
+		#关闭进程池，进程池不会再创建新的进程
 		pool.close()
+		#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束
 		pool.join()
-
-		#totalIndex = pageIndex
-		#for pi in totalIndex:
-		#	self.getAllPage(pi)
-		self.parserPage()
-		#self.getAllPage()
+		f_html.close()
+		#f_soup = open('houseSoup.txt','w')
+		self.zy = BeautifulSoup(open('houseHtml.txt'), 'html.parser')
+		#time.sleep(1)
+		#f_soup.close()
+		#self.parserPage()
 		self.getPrice()
 		self.getInfo()
 		self.getSpecificInfo()
-		#print multiprocessing.cpu_count()
+		#连接数据库
+		self.mysql = mysql.Mysql()
+		#print self.mysql.getCurrentTime()
 
+	#将信息存入数据库
+	def insertDb(self,houseNum):
+		for i in range(0,houseNum):
+			house_dict = {
+			"house_url": self.hu[i],
+			"houseinfo_xhm": self.hi1[i],
+			"houseinfo_clzn": self.hi2[i],
+			"houseprice": self.hp[i],
+			"followinfo": self.hsi[i],
+			}
+			mysql.Mysql.insertData(ZYDC, house_dict)
+
+
+#执行函数
 if __name__ == "__main__":
+	start = time.clock()
 	#设置列表页固定部分
 	url = 'http://sz.centanet.com/ershoufang/'
 	#设置页面可变部分
@@ -135,13 +163,17 @@ if __name__ == "__main__":
 	#获取第一页的所有代码
 	html1 = spider.getPage(1)
 	#获取房源总数量
-	houseNum = re.findall(r".*?<span.*?cRed.*?<em>(.*?)</em>", html1)
+	houseNum = int(re.findall(r".*?<span.*?cRed.*?<em>(.*?)</em>", html1)[0])
 	#获取总页数
-	TotalPage = int(houseNum[0])/25 + 1
+	TotalPage = houseNum/25 + 1
 	#每个页面
-	TotalPages = [page for page in range(1,3)]
+	TotalPages = [page for page in range(1,TotalPage+1)]
 	spider.main(TotalPages)
+	spider.insertDb(houseNum)
+	end = time.clock()
+	print str(end-start) + 's'
 
+'''
 #创建数据表
 array = {'followinfo':spider.hsi, 'houseprice':spider.hp, 'houseinfo1':spider.hi1, 'houseinfo2':spider.hi2}
 house = pd.DataFrame.from_dict(array, orient='index').transpose()
@@ -180,4 +212,4 @@ xiaoqu
 zhuangxiu = house.groupby('zhuangxiu')['zhuangxiu'].agg(len)
 #查看户型汇总结果
 zhuangxiu
-
+'''
