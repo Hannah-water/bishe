@@ -13,6 +13,7 @@ import numpy as np
 import mysql
 #导入多进程库
 from multiprocessing import Pool
+import gc
 #解决python进程池调用类方法不执行问题
 import copy_reg
 import types
@@ -122,9 +123,9 @@ class ZYDC:
 		#for page in pageIndex:
 		#	print pool.apply_async(self.getAllPage, (pageIndex,))
 		#join()将列表转为字符串
-		#poolhtml = pool.map(self.getAllPage, pageIndex)
-		#print len(poolhtml)
-		f_html.write(''.join(pool.map(self.getAllPage, pageIndex)))
+		poolhtml = pool.map(self.getAllPage, pageIndex)
+		#print poolhtml
+		f_html.write(''.join(poolhtml))
 		#关闭进程池，进程池不会再创建新的进程
 		pool.close()
 		#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束
@@ -132,17 +133,24 @@ class ZYDC:
 		f_html.close()
 		#f_soup = open('houseSoup.txt','w')
 		self.zy = BeautifulSoup(open('houseHtml.txt'), 'html.parser')
-		print self.zy
+		#print self.zy
 		#time.sleep(1)
 		#f_soup.close()
 		#self.parserPage()
 		self.getPrice()
 		self.getInfo()
 		self.getSpecificInfo()
-		self.zy = BeautifulSoup('', 'html.parser')
 		#连接数据库
 		self.mysql = mysql.Mysql()
 		self.insertDb()
+		#
+		del self.zy
+		del self.hu
+		del self.hi1
+		del self.hi2
+		del self.hp
+		del self.hsi
+		gc.collect()
 		#print self.mysql.getCurrentTime()
 
 	#将信息存入数据库
@@ -174,12 +182,13 @@ if __name__ == "__main__":
 	#获取总页数
 	TotalPage = houseNum/25 + 1
 	#每个页面
-	pages = [page for page in range(1,TotalPage+1)]
-	TotalPages = [pages[i:i+10] for i in range(0,20,10)]
+	pages = [p for p in range(1,TotalPage+1)]
+	TotalPages = [pages[i:i+100] for i in range(0,TotalPage,100)]
 	#TotalPages = [pages[i:i+10] for i in range(0,20,10)]
-	for i in range(0,2):
+	for i in range(0,len(TotalPages)):
+		spider = ZYDC(url,page)
 		spider.main(TotalPages[i])
-		print TotalPages[i]
+	#spider = ZYDC(url,page)
 	#spider.main(TotalPages[1])
 	end = time.clock()
 	print str(end-start) + 's'
