@@ -16,6 +16,8 @@ from multiprocessing import Pool
 #解决python进程池调用类方法不执行问题
 import copy_reg
 import types
+#import sys
+#sys.setrecursionlimit(1000000)
 #解决python进程池调用类方法不执行问题
 def _reduce_method(m):
     if m.im_self is None:
@@ -113,13 +115,15 @@ class ZYDC:
 
 	#主函数
 	def main(self,pageIndex):
+		#print pageIndex
 		f_html = open('houseHtml.txt','w')
-		#进程池，8个进程并发
+		#进程池，4个进程并发
 		pool = Pool(processes=4)
 		#for page in pageIndex:
 		#	print pool.apply_async(self.getAllPage, (pageIndex,))
 		#join()将列表转为字符串
 		#poolhtml = pool.map(self.getAllPage, pageIndex)
+		#print len(poolhtml)
 		f_html.write(''.join(pool.map(self.getAllPage, pageIndex)))
 		#关闭进程池，进程池不会再创建新的进程
 		pool.close()
@@ -128,19 +132,22 @@ class ZYDC:
 		f_html.close()
 		#f_soup = open('houseSoup.txt','w')
 		self.zy = BeautifulSoup(open('houseHtml.txt'), 'html.parser')
+		print self.zy
 		#time.sleep(1)
 		#f_soup.close()
 		#self.parserPage()
 		self.getPrice()
 		self.getInfo()
 		self.getSpecificInfo()
+		self.zy = BeautifulSoup('', 'html.parser')
 		#连接数据库
 		self.mysql = mysql.Mysql()
+		self.insertDb()
 		#print self.mysql.getCurrentTime()
 
 	#将信息存入数据库
-	def insertDb(self,houseNum):
-		for i in range(0,houseNum):
+	def insertDb(self):
+		for i in range(0,len(self.hu)):
 			house_dict = {
 			"house_url": self.hu[i],
 			"houseinfo_xhm": self.hi1[i],
@@ -148,7 +155,7 @@ class ZYDC:
 			"houseprice": self.hp[i],
 			"followinfo": self.hsi[i],
 			}
-			mysql.Mysql.insertData(ZYDC, house_dict)
+			self.mysql.insertData('ZYDC', house_dict)
 
 
 #执行函数
@@ -167,9 +174,13 @@ if __name__ == "__main__":
 	#获取总页数
 	TotalPage = houseNum/25 + 1
 	#每个页面
-	TotalPages = [page for page in range(1,TotalPage+1)]
-	spider.main(TotalPages)
-	spider.insertDb(houseNum)
+	pages = [page for page in range(1,TotalPage+1)]
+	TotalPages = [pages[i:i+10] for i in range(0,20,10)]
+	#TotalPages = [pages[i:i+10] for i in range(0,20,10)]
+	for i in range(0,2):
+		spider.main(TotalPages[i])
+		print TotalPages[i]
+	#spider.main(TotalPages[1])
 	end = time.clock()
 	print str(end-start) + 's'
 
