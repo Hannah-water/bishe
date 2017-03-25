@@ -37,9 +37,30 @@ class Mysql:
 				#发生错误时回滚
 				self.db.rollback()
 				#主键唯一，无法插入
-				if "key 'PRIMARY'" in e.args[1]:
-					print self.getCurrentTime(),"数据已存在，未插入数据"
-				else:
-					print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
+				#if "key 'PRIMARY'" in e.args[1]:
+				#	print self.getCurrentTime(),"数据已存在，未插入数据"
+				#else:
+				#	print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
+'''
+	#查询数据
+	def selectData(self,table,field):
+		try:
+			#cols = ', '.join(my_dict.keys())
+			sql = "SELECT %s FROM %s" % (field, table)
+			try:
+				result = self.cur.execute(sql)
+				#select_id = self.db.select_id()
+				self.db.commit()
+				#判断是否执行成功
+				if result:
+					return insert_id
+				else:
+					return 0
+			except MySQLdb.Error,e:
+				#发生错误时回滚
+				self.db.rollback()
+		except MySQLdb.Error,e:
+			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
+'''

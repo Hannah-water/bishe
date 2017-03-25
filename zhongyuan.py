@@ -38,8 +38,6 @@ class ZYDC:
 		self.page = page
 		#从第一页开始
 		#self.pageIndex = 1
-		#存放所有页面内容
-		#self.html = ""
 		#所有页面的内容,BeautifulSoup对象
 		self.zy = BeautifulSoup('', 'html.parser')
 		#存放房源链接
@@ -73,10 +71,6 @@ class ZYDC:
 		html = self.getPage(pageIndex)
 		return html
 
-	#解析抓取的页面内容
-	#def parserPage(self):
-	#	self.zy = BeautifulSoup(self.html, 'html.parser')
-
 	#获取房源价格
 	def getPrice(self):
 		housePrice = self.zy.find_all('p', attrs={'class':'price-nub cRed'})
@@ -99,24 +93,22 @@ class ZYDC:
 	def getSpecificInfo(self):
 		#获取每一个房源具体信息链接
 		houseHref = self.zy.find_all('a', attrs={'class':'cBlueB'})
-		#print houseHref
 		#获取每一个房源具体信息
 		for z in houseHref:
 			house_url = 'http://sz.centanet.com' + z.get('href')
 			self.hu.append(house_url)
-			request = requests.get(url=house_url, headers=self.headers)
-			house_html = request.content
+			r = requests.get(url=house_url, headers=self.headers)
+			house_html = r.content
 			zy_fang = BeautifulSoup(house_html, 'html.parser')
 			#获取每一个房源带看数
 			followInfo = zy_fang.find_all('ul', attrs={'class':'rDetail fr'})
-			for x in followInfo:
-				#follow = x.li.get_text().replace('\n','') + '/' + x.li.find_next_sibling().get_text().replace('\n','')
-				follow = x.li.find_next_sibling().get_text().replace('\n','')
-				self.hsi.append(follow)
+			#for x in followInfo:
+			#	follow = x.li.get_text().replace('\n','') + '/' + x.li.find_next_sibling().get_text().replace('\n','')
+			follow = followInfo[0].li.find_next_sibling().get_text().replace('\n','')
+			self.hsi.append(follow)
 
 	#主函数
 	def main(self,pageIndex):
-		#print pageIndex
 		f_html = open('houseHtml.txt','w')
 		#进程池，4个进程并发
 		pool = Pool(processes=4)
@@ -131,19 +123,15 @@ class ZYDC:
 		#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束
 		pool.join()
 		f_html.close()
-		#f_soup = open('houseSoup.txt','w')
+
 		self.zy = BeautifulSoup(open('houseHtml.txt'), 'html.parser')
-		#print self.zy
-		#time.sleep(1)
-		#f_soup.close()
-		#self.parserPage()
 		self.getPrice()
 		self.getInfo()
 		self.getSpecificInfo()
 		#连接数据库
 		self.mysql = mysql.Mysql()
 		self.insertDb()
-		#
+		#释放内存
 		del self.zy
 		del self.hu
 		del self.hi1
@@ -151,7 +139,7 @@ class ZYDC:
 		del self.hp
 		del self.hsi
 		gc.collect()
-		#print self.mysql.getCurrentTime()
+		
 
 	#将信息存入数据库
 	def insertDb(self):
@@ -183,13 +171,14 @@ if __name__ == "__main__":
 	TotalPage = houseNum/25 + 1
 	#每个页面
 	pages = [p for p in range(1,TotalPage+1)]
-	TotalPages = [pages[i:i+100] for i in range(0,TotalPage,100)]
-	#TotalPages = [pages[i:i+10] for i in range(0,20,10)]
+	TotalPages = [pages[i:i+10] for i in range(0,TotalPage,10)]
+	#print houseNum
+	#print TotalPage
 	for i in range(0,len(TotalPages)):
 		spider = ZYDC(url,page)
 		spider.main(TotalPages[i])
 	#spider = ZYDC(url,page)
-	#spider.main(TotalPages[1])
+	#spider.main(TotalPages[38])
 	end = time.clock()
 	print str(end-start) + 's'
 
