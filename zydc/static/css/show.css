@@ -1,0 +1,23 @@
+* {
+	margin: 0;
+	padding: 0;
+}
+nav {
+	float: left;
+	margin-top: 50px;
+	margin-left: 100px;
+}
+nav a {
+	display: block;
+	cursor: pointer;
+	text-decoration: none;
+	text-align: center;
+	margin-bottom: 20px;
+	padding: 10px;
+	background: transparent;
+	border: 0.5px solid blue;
+}
+main {
+	float: left;
+	margin: 30px 100px;
+}

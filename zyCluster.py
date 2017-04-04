@@ -50,5 +50,6 @@ plt.title(u'房价-面积-带看数聚类分析')
 plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
 #保存图表
 plt.savefig('zyImage/cluster.png')
+plt.savefig('zydc/static/images/cluster.png')
 #显示图表
 plt.show()

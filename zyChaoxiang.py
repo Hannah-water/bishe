@@ -34,5 +34,6 @@ plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
 plt.yticks(a,(u'不限',u'东',u'东北',u'东南',u'东西',u'北',u'南',u'南北',u'没有注明',u'西',u'西北',u'西南'))
 #保存图表
 plt.savefig('zyImage/chaoxiang.png')
+plt.savefig('zydc/static/images/chaoxiang.png')
 #显示图表
 plt.show()

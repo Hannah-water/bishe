@@ -18,9 +18,9 @@ a = np.arange(1,7,1)
 #创建条形图，参数为带看数分组，颜色，透明度和图表边框
 plt.barh(a,zyPandas.follow_group.drop('0'),color='#052B6C',alpha=0.8,align='center',edgecolor='white')
 #设置x轴标题
-plt.ylabel(u'带看数分组')
+plt.ylabel(u'带看数分组（次）')
 #设置y轴标题
-plt.xlabel(u'数量')
+plt.xlabel(u'数量（个）')
 #设置坐标轴的刻度
 plt.xlim(0,1200)
 plt.ylim(0,7)

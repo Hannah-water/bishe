@@ -31,194 +31,89 @@ copy_reg.pickle(types.MethodType, _reduce_method)
 class ZYDC:
 
 	#初始化方法，定义一些变量
-	def __init__(self,baseUrl,page):
+	def __init__(self,baseUrl,page,headers):
 		#列表页固定部分
 		self.baseUrl = baseUrl
 		#页面可变部分
 		self.page = page
-		#从第一页开始
-		#self.pageIndex = 1
-		#所有页面的内容,BeautifulSoup对象
-		self.zy = BeautifulSoup('', 'html.parser')
-		#存放房源链接
-		self.hu = []
-		#存放房源价格
-		self.hp = []
-		#存放房源信息
-		#小区名，户型，面积
-		self.hi1 = []
-		#朝向，楼层，装修，年代
-		self.hi2 = []
-		#存放每一个房源具体信息,带看数
-		self.hsi = []
 		#设置请求头部信息
 		self.headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'} 
 
-	#传入某一页的索引获得页面内容
+	#传入某一页的索引获得该页面的房源链接
 	def getPage(self,pageIndex):
 		try:
 			url = self.baseUrl + self.page + str(pageIndex) + '/'
 			request = requests.get(url=url, headers=self.headers)
 			htm = request.content
-			return htm
+			zy = BeautifulSoup(htm, 'html.parser')
+			houseurls = zy.find_all('a', attrs={'class':'cBlueB'})
+			urls = []
+			for x in houseurls:
+				urls.append(x.get('href'))
+			return urls
 		except Exception as e:
 			if hasattr(e, "reason"):
 				print "连接中原地产失败，错误原因",e.reason
 				return None
 
-	#获取所有页面的内容
-	def getAllPage(self,pageIndex):
-		html = self.getPage(pageIndex)
-		return html
-
-	#获取房源价格
-	def getPrice(self):
-		housePrice = self.zy.find_all('p', attrs={'class':'price-nub cRed'})
-		for x in housePrice:
-			price = x.get_text()
-			self.hp.append(price)
-
-	#获取房源信息
-	def getInfo(self):
-		houseInfo1 = self.zy.find_all('p', attrs={'class':'f14 f000 mb_10'})
-		houseInfo2 = self.zy.find_all('p', attrs={'class':'f7b mb_10'})
-		for y in houseInfo1:
-			house1 = y.a.string + '|' + y.span.string + '|' + y.span.next_sibling.string
-			self.hi1.append(house1)
-		for y in houseInfo2:
-			house2 = y.get_text().replace('\r\n','').strip()
-			self.hi2.append(house2)
-
-	#获取每一个房源具体信息
-	def getSpecificInfo(self):
-		#获取每一个房源具体信息链接
-		houseHref = self.zy.find_all('a', attrs={'class':'cBlueB'})
-		#获取每一个房源具体信息
-		for z in houseHref:
-			house_url = 'http://sz.centanet.com' + z.get('href')
-			self.hu.append(house_url)
-			r = requests.get(url=house_url, headers=self.headers)
-			house_html = r.content
-			zy_fang = BeautifulSoup(house_html, 'html.parser')
-			#获取每一个房源带看数
-			followInfo = zy_fang.find_all('ul', attrs={'class':'rDetail fr'})
-			#for x in followInfo:
-			#	follow = x.li.get_text().replace('\n','') + '/' + x.li.find_next_sibling().get_text().replace('\n','')
-			follow = followInfo[0].li.find_next_sibling().get_text().replace('\n','')
-			self.hsi.append(follow)
+	#获取所有页面的房源链接
+	def getAllUrl(self,pageIndex):
+		urls = self.getPage(pageIndex)
+		return urls
 
 	#主函数
 	def main(self,pageIndex):
-		f_html = open('houseHtml.txt','w')
+		f_html = open('houseUrl.txt','w')
 		#进程池，4个进程并发
 		pool = Pool(processes=4)
 		#for page in pageIndex:
-		#	print pool.apply_async(self.getAllPage, (pageIndex,))
+		#	print pool.apply_async(self.getAllUrl, (pageIndex,))
+		poolurl = pool.map(self.getAllUrl, pageIndex)
+		urls = []
+		#将列表中的子列表合并
+		map(urls.extend, poolurl)
 		#join()将列表转为字符串
-		poolhtml = pool.map(self.getAllPage, pageIndex)
-		#print poolhtml
-		f_html.write(''.join(poolhtml))
+		f_html.write('\n'.join(urls))
 		#关闭进程池，进程池不会再创建新的进程
 		pool.close()
 		#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束
 		pool.join()
 		f_html.close()
-
-		self.zy = BeautifulSoup(open('houseHtml.txt'), 'html.parser')
-		self.getPrice()
-		self.getInfo()
-		self.getSpecificInfo()
 		#连接数据库
 		self.mysql = mysql.Mysql()
-		self.insertDb()
-		#释放内存
-		del self.zy
-		del self.hu
-		del self.hi1
-		del self.hi2
-		del self.hp
-		del self.hsi
-		gc.collect()
+		#将获取的url存入数据库
+		for i in range(0,len(urls)):
+			url_dict = {"url": urls[i],}
+			self.mysql.insertData('houseurl', url_dict)
+
 		
-
-	#将信息存入数据库
-	def insertDb(self):
-		for i in range(0,len(self.hu)):
-			house_dict = {
-			"house_url": self.hu[i],
-			"houseinfo_xhm": self.hi1[i],
-			"houseinfo_clzn": self.hi2[i],
-			"houseprice": self.hp[i],
-			"followinfo": self.hsi[i],
-			}
-			self.mysql.insertData('ZYDC', house_dict)
-
-
 #执行函数
 if __name__ == "__main__":
 	start = time.clock()
+	print time.strftime('[%Y-%m-%d %H:%M:%S]',time.localtime(time.time()))
 	#设置列表页固定部分
 	url = 'http://sz.centanet.com/ershoufang/'
 	#设置页面可变部分
 	page = ('g')
-	#运行爬虫类
-	spider = ZYDC(url,page)
+	headers = {'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'} 
 	#获取第一页的所有代码
-	html1 = spider.getPage(1)
+	url1 = url + page + str(1) + '/'
+	request = requests.get(url=url1, headers=headers)
+	html1 = request.content
 	#获取房源总数量
 	houseNum = int(re.findall(r".*?<span.*?cRed.*?<em>(.*?)</em>", html1)[0])
 	#获取总页数
 	TotalPage = houseNum/25 + 1
 	#每个页面
 	pages = [p for p in range(1,TotalPage+1)]
-	TotalPages = [pages[i:i+10] for i in range(0,TotalPage,10)]
+	#TotalPages = [pages[i:i+10] for i in range(0,TotalPage,10)]
 	#print houseNum
-	#print TotalPage
-	for i in range(0,len(TotalPages)):
-		spider = ZYDC(url,page)
-		spider.main(TotalPages[i])
-	#spider = ZYDC(url,page)
-	#spider.main(TotalPages[38])
+	#for i in range(0,len(TotalPages)):
+	#	spider = ZYDC(url,page)
+	#	spider.main(TotalPages[i])
+	spider = ZYDC(url,page,headers)
+	spider.main(pages)
+	print time.strftime('[%Y-%m-%d %H:%M:%S]',time.localtime(time.time()))
 	end = time.clock()
 	print str(end-start) + 's'
 
-'''
-#创建数据表
-array = {'followinfo':spider.hsi, 'houseprice':spider.hp, 'houseinfo1':spider.hi1, 'houseinfo2':spider.hi2}
-house = pd.DataFrame.from_dict(array, orient='index').transpose()
-#查看数据表的内容
-house.head()
-
-#对房源信息进行分列
-houseinfo1_split = pd.DataFrame((x.split('|') for x in house.houseinfo1),index=house.index,columns=['xiaoqu','huxing','mianji'])
-houseinfo2_split = pd.DataFrame((x.split('|') for x in house.houseinfo2),index=house.index,columns=['chaoxiang','louceng','zhuangxiu','niandai'])
-#查看分列结果
-houseinfo1_split.head()
-houseinfo2_split.head()
-#将分列结果拼接起来
-houseinfo = pd.merge(houseinfo1_split,houseinfo2_split,right_index=True,left_index=True)
-#将分列结果拼接回原数据表
-house = pd.merge(house,houseinfo,right_index=True,left_index=True)
-#查看拼接后的数据表
-house.head()
-
-#按房源户型类别进行汇总
-huxing = house.groupby('huxing')['huxing'].agg(len)
-#查看户型汇总结果
-huxing
-
-#按房源户型类别进行汇总
-chaoxiang = house.groupby('chaoxiang')['chaoxiang'].agg(len)
-#查看户型汇总结果
-chaoxiang
-
-#按房源户型类别进行汇总
-xiaoqu = house.groupby('xiaoqu')['xiaoqu'].agg(len)
-#查看户型汇总结果
-xiaoqu
-
-#按房源户型类别进行汇总
-zhuangxiu = house.groupby('zhuangxiu')['zhuangxiu'].agg(len)
-#查看户型汇总结果
-zhuangxiu
-'''

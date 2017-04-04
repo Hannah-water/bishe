@@ -36,5 +36,6 @@ plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
 plt.yticks(a,(u'1室0厅',u'1室1厅',u'1室2厅',u'2室0厅',u'2室1厅',u'2室2厅',u'2室3厅',u'3室0厅',u'3室1厅',u'3室2厅',u'3室3厅',u'4室0厅',u'4室1厅',u'4室2厅',u'4室3厅',u'4室4厅',u'5室1厅',u'5室2厅',u'5室3厅',u'5室4厅',u'5室5厅',u'6室1厅',u'6室2厅',u'6室3厅',u'6室4厅',u'6室5厅',u'6室6厅',u'7室1厅',u'7室2厅',u'7室3厅',u'7室4厅',u'7室6厅',u'8室2厅',u'8室3厅',u'8室4厅',u'8室5厅',u'9室2厅',u'9室3厅',u'9室4厅',u'9室6厅'))
 #保存图表
 plt.savefig('zyImage/huxing.png')
+plt.savefig('zydc/static/images/huxing.png')
 #显示图表
 plt.show()

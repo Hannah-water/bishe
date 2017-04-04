@@ -11,15 +11,15 @@ import MySQLdb
 from sklearn.cluster import KMeans
 
 #连接数据库，创建数据表
-conn = MySQLdb.connect(host='localhost',user='root',passwd='121261',db='ZYDC_DB',port=3306,charset='utf8')
-housedb = pd.read_sql('select * from ZYDC', con=conn)
+conn = MySQLdb.connect(host='localhost',user='root',passwd='121261',db='zy_db',port=3306,charset='utf8')
+housedb = pd.read_sql('select * from zydc', con=conn)
 conn.close()
 #查看数据表内容
 housedb.head()
 
 #对房源信息进行分列
-houseinfo1_split = pd.DataFrame((x.split('|') for x in housedb.houseinfo_xhm),index=housedb.index,columns=['xiaoqu','huxing','mianji'])
-houseinfo2_split = pd.DataFrame((x.split('|') for x in housedb.houseinfo_clzn),index=housedb.index,columns=['chaoxiang','louceng','zhuangxiu','niandai'])
+houseinfo1_split = pd.DataFrame((x.split('|') for x in housedb.price_area),index=housedb.index,columns=['price','huxing','mianji'])
+houseinfo2_split = pd.DataFrame((x.split('|') for x in housedb.houseinfo),index=housedb.index,columns=['chaoxiang','niandai','louceng','zhuangxiu','xiaoqu','address'])
 #查看分列结果
 houseinfo1_split.head()
 houseinfo2_split.head()
@@ -31,7 +31,7 @@ house = pd.merge(housedb,houseinfo,right_index=True,left_index=True)
 house.head()
 
 #对房源价格进行分列
-houseprice_split = pd.DataFrame((x.strip().split(u'万')[0] for x in house.houseprice),index=house.index,columns=['houseprice_num'])
+houseprice_split = pd.DataFrame((x.strip().split(u'万')[0] for x in house.price),index=house.index,columns=['houseprice_num'])
 #讲分列后的房源价格拼接回数据表
 house = pd.merge(house,houseprice_split,right_index=True,left_index=True)
 #将houseprice_num的值都转为数字
@@ -45,11 +45,11 @@ house['houseprice_num'] = house['houseprice_num'].astype(float)
 
 #对带看数进行分列
 fnum = []
-for x in house.followinfo:
-    if not x.isspace():
-        x = x.split(u'带看')[1].split(u'次')[0]
+for x in house.follow:
+    if x == '':
+    	x = 0
     else:
-        x = 0
+        x = x.split(u'带看')[1].strip().split(u'次')[0]
     fnum.append(x)
 followinfo_split = pd.DataFrame(fnum,index=house.index,columns=['follow_num'])
 #讲分列后的带看数拼接回数据表
@@ -230,42 +230,3 @@ plt.yticks(a,(u'东',u'东北',u'东南',u'东西',u'北',u'南',u'南北',u'没
 plt.show()
 '''
 
-#聚类分析
-
-#使用房源总价，面积和带看数三个字段进行聚类
-house_type = np.array(house[['houseprice_num','mianji_num','follow_num']])
-#设置质心数量为3
-clf = KMeans(n_clusters=3)
-#计算聚类结果
-clf = clf.fit(house_type)
-#查看分类结果的中心坐标
-clf.cluster_centers_
-
-#在原数据表中标注所属类别
-house['label'] = clf.labels_
-
-#提取不同类别的数据
-house0 = house.loc[house['label'] == 0]	#总价低，面积低，带看数高
-house1 = house.loc[house['label'] == 1]	#总价高，面积高，带看书低
-house2 = house.loc[house['label'] == 2]	#总价中，面积中，带看数中
-'''
-#绘制房源总价与面积聚类结果的散点图
-#设置条形图的字体大小
-plt.rc('font', family='SimHei', size=12)
-#设置条形图的尺寸
-plt.figure(figsize=(8,6))
-#创建散点图
-plt.scatter(house0['houseprice_num'], house0['mianji_num'],color='#99CC01',marker='+',linewidth=2,alpha=0.8)	#绿
-plt.scatter(house1['houseprice_num'], house1['mianji_num'],color='#FE0000',marker='+',linewidth=2,alpha=0.8)	#红
-plt.scatter(house2['houseprice_num'], house2['mianji_num'],color='#0000FE',marker='+',linewidth=2,alpha=0.8)	#蓝
-#设置x轴标题
-plt.xlabel(u'房源总价')
-#设置y轴标题
-plt.ylabel(u'房源面积')
-#设置坐标轴的刻度
-plt.xlim(0,20000)
-#设置背景网格线的颜色，样式，尺寸和透明度
-plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
-#显示图表
-plt.show()
-'''

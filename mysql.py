@@ -12,7 +12,7 @@ class Mysql:
 	#数据库初始化
 	def __init__(self):
 		try:
-			self.db = MySQLdb.connect(host='localhost',user='root',passwd='121261',db='ZYDC_DB',port=3306,charset='utf8')
+			self.db = MySQLdb.connect(host='localhost',user='root',passwd='121261',db='zy_db',port=3306,charset='utf8')
 			self.cur = self.db.cursor()
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"连接数据库错误，原因%d: %s" % (e.args[0],e.args[1])
@@ -37,30 +37,30 @@ class Mysql:
 				#发生错误时回滚
 				self.db.rollback()
 				#主键唯一，无法插入
-				#if "key 'PRIMARY'" in e.args[1]:
-				#	print self.getCurrentTime(),"数据已存在，未插入数据"
-				#else:
-				#	print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
+				if "key 'PRIMARY'" in e.args[1]:
+					print self.getCurrentTime(),"数据已存在，未插入数据"
+				else:
+					print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
-'''
+
+
 	#查询数据
-	def selectData(self,table,field):
+	def selectData(self,table,col):
 		try:
-			#cols = ', '.join(my_dict.keys())
-			sql = "SELECT %s FROM %s" % (field, table)
+			self.db.set_character_set('utf8')
+			sql = "SELECT %s FROM %s" % (col, table)
 			try:
-				result = self.cur.execute(sql)
-				#select_id = self.db.select_id()
+				self.cur.execute(sql)
+				result = self.cur.fetchall()
 				self.db.commit()
+				return result
 				#判断是否执行成功
 				if result:
-					return insert_id
+					return 1
 				else:
 					return 0
 			except MySQLdb.Error,e:
-				#发生错误时回滚
-				self.db.rollback()
+				print self.getCurrentTime(),"查询数据失败，原因%d: %s" % (e.args[0], e.args[1])
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
-'''
