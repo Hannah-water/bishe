@@ -29,8 +29,10 @@ urlpatterns = [
 	url(r'^$', view.index),
     url(r'^huxing$', view.huxing),
     url(r'^mianji$', view.mianji),
+    url(r'^diqu$', view.diqu),
     url(r'^daikan$', view.daikan),
     url(r'^chaoxiang$', view.chaoxiang),
+    url(r'^niandai$', view.niandai),
     url(r'^cluster$', view.cluster),
 ]
 

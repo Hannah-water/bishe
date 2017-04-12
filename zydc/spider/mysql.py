@@ -18,33 +18,44 @@ class Mysql:
 			print self.getCurrentTime(),"连接数据库错误，原因%d: %s" % (e.args[0],e.args[1])
 
 	#插入数据
-	def insertData(self,table,my_dict):
+	def insertData(self,table,cols,param):
 		try:
 			self.db.set_character_set('utf8')
-			cols = ', '.join(my_dict.keys())
-			values = '"," '.join(my_dict.values())
-			#sql = "INSERT INTO %s(%s) VALUES(%s) WHERE NOT EXISTS (SELECT * FROM %s WHERE %s = %s)" % (table, cols, '"'+values+'"', table, cols, '"'+values+'"')
-			#sql = "INSERT INTO %s(%s) VALUES(%s)" % (table, cols, '"'+values+'"')
-			sql = "INSERT INTO %s(%s) VALUES(%s) ON DUPLICATE KEY UPDATE %s=%s" % (table, cols, '"'+values+'"', cols, '"'+values+'"')
+			q= []
+			for x in param:
+				#cols = ', '.join(x.keys())
+				values = '"," '.join(x.values())
+				q.append(('"'+values+'"',))
 			try:
-				result = self.cur.execute(sql)
+				sql = "INSERT INTO {}({}) VALUES(%s)".format(table,cols)
+				#print sql
+				#print q
+				#for y in q:
+				#	sql = "INSERT INTO %s(%s) VALUES(%s) ON DUPLICATE KEY UPDATE %s=%s" % y
+				#	result = self.cur.execute(sql)
+				#	insert_id = self.db.insert_id()
+				#	self.db.commit()
+				result = self.cur.executemany(sql,q)
 				insert_id = self.db.insert_id()
 				self.db.commit()
 				#判断是否执行成功
-				if result:
-					return insert_id
-				else:
-					return 0
+				#if result:
+				#	return insert_id
+				#else:
+				#	return 0
 			except MySQLdb.Error,e:
 				#发生错误时回滚
 				self.db.rollback()
 				#主键唯一，无法插入
-				if "key 'PRIMARY'" in e.args[1]:
-					print self.getCurrentTime(),"数据已存在，未插入数据"
-				else:
-					print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
+			#	if "key 'PRIMARY'" in e.args[1]:
+			#		print self.getCurrentTime(),"数据已存在，未插入数据"
+			#	else:
+			#		print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
+		finally:
+			self.cur.close()
+			self.db.close()
 
 
 	#查询数据

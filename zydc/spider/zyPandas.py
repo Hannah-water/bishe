@@ -81,11 +81,46 @@ mianji_group_label = [u'小于50','50-100','100-150','150-200','200-250','250-30
 house['mianji_group'] = pd.cut(house['mianji_num'], mbins, labels=mianji_group_label)
 mianji_group = house.groupby('mianji_group')['mianji_group'].agg(len)
 
+#对房源地区进行分列
+area = []
+for x in house.address:
+    if u'【' in x:
+        x = x.split(u'【')[1].strip().split(u'】')[0]
+        if '/' in x:
+            x = x.split('/')[0]
+    else:
+        x = u'没有注明'
+    area.append(x)
+address_split = pd.DataFrame(area,index=house.index,columns=['district'])
+#讲分列后的房源地区拼接回数据表
+house = pd.merge(house,address_split,right_index=True,left_index=True)
+#按房源地区类别进行汇总
+district_group = house.groupby('district')['district'].agg(len)
+
 #按房源户型类别进行汇总
 huxing_group = house.groupby('huxing')['huxing'].agg(len)
 
 #按房源朝向类别进行汇总
 chaoxiang_group = house.groupby('chaoxiang')['chaoxiang'].agg(len)
+
+#对房源楼层进行分列
+louceng_split = pd.DataFrame((x.split('(')[0] for x in house.louceng),index=house.index,columns=['louceng_pos'])
+#讲分列后的房源楼层拼接回数据表
+house = pd.merge(house,louceng_split,right_index=True,left_index=True)
+#按房源楼层类别进行汇总
+louceng_group = house.groupby('louceng_pos')['louceng_pos'].agg(len)
+
+#按房源装修类别进行汇总
+zhuangxiu_group = house.groupby('zhuangxiu')['zhuangxiu'].agg(len)
+
+#对房源年代进行分列
+niandai_split = pd.DataFrame((x.split(u'年')[0] for x in house.niandai),index=house.index,columns=['niandai_num'])
+#讲分列后的房源年代拼接回数据表
+house = pd.merge(house,niandai_split,right_index=True,left_index=True)
+#将mianji_num字段格式改为float
+house['niandai_num'] = house['niandai_num'].astype(int)
+#按房源年代类别进行汇总
+niandai_group = house.groupby('niandai_num')['niandai_num'].agg(len)
 
 house.to_csv('spider/house.csv',encoding='utf8')
 '''
@@ -93,141 +128,4 @@ house.to_csv('spider/house.csv',encoding='utf8')
 xiaoqu_group = house.groupby('xiaoqu')['xiaoqu'].agg(len)
 #查看小区汇总结果
 xiaoqu_group
-
-#按房源楼层类别进行汇总
-louceng = house.groupby('louceng')['louceng'].agg(len)
-#查看楼层汇总结果
-louceng
-
-#按房源装修类别进行汇总
-zhuangxiu = house.groupby('zhuangxiu')['zhuangxiu'].agg(len)
-#查看装修汇总结果
-zhuangxiu
-
-#按房源年代类别进行汇总
-niandai = house.groupby('niandai')['niandai'].agg(len)
-#查看年代汇总结果
-niandai
-
-#按带看数进行汇总
-follow = house.groupby('followinfo')['followinfo'].agg(len)
-#查看带看数汇总结果
-follow
 '''
-
-'''
-#plt.rcParams['font.sans-serif'] = ['SimHei']
-#绘制房源户型分布条形图
-#设置条形图的字体大小
-plt.rc('font', family='SimHei', size=12)
-#设置条形图的尺寸
-plt.figure(figsize=(12,9))
-#创建一个一维数组赋值给a
-a = np.arange(1,38,1)
-#a=np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37])
-#创建条形图，参数为户型类别，颜色，透明度和图表边框
-plt.barh(a,huxing_group,color='#052B6C',alpha=0.8,align='center',edgecolor='white')
-#设置y轴标题
-plt.ylabel(u'户型')
-#设置x轴标题
-plt.xlabel(u'数量')
-#设置坐标轴的刻度
-plt.xlim(0,6000)
-plt.ylim(0,37)
-#设置图表标题
-plt.title(u'房源户型分布情况')
-#设置图例，并设置在图表中的显示位置
-plt.legend([u'数量'], loc='upper right')
-#设置背景网格线的颜色，样式，尺寸和透明度
-plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
-#设置y轴数据分类名称
-plt.yticks(a,(u'1室0厅',u'1室1厅',u'1室2厅',u'2室0厅',u'2室1厅',u'2室2厅',u'3室0厅',u'3室1厅',u'3室2厅',u'3室3厅',u'4室0厅',u'4室1厅',u'4室2厅',u'4室3厅',u'5室1厅',u'5室2厅',u'5室3厅',u'5室4厅',u'5室5厅',u'6室0厅',u'6室2厅',u'6室3厅',u'6室4厅',u'6室5厅',u'6室6厅',u'7室2厅',u'7室3厅',u'7室4厅',u'7室6厅',u'8室2厅',u'8室3厅',u'8室4厅',u'9室2厅',u'9室3厅',u'9室4厅',u'9室6厅'))
-#显示图表
-plt.show()
-'''
-'''
-#绘制房源带看数分布条形图
-#设置条形图的字体大小
-plt.rc('font', family='SimHei', size=12)
-#设置条形图的尺寸
-plt.figure(figsize=(8,6))
-#创建一个一维数组赋值给a
-a = np.arange(1,7,1)
-#创建条形图，参数为带看数分组，颜色，透明度和图表边框
-plt.barh(a,follow_group.drop('0'),color='#052B6C',alpha=0.8,align='center',edgecolor='white')
-#设置x轴标题
-plt.ylabel(u'带看数分组')
-#设置y轴标题
-plt.xlabel(u'数量')
-#设置坐标轴的刻度
-plt.xlim(0,1000)
-plt.ylim(0,7)
-#设置图表标题
-plt.title(u'房源带看数分布情况')
-#设置图例，并设置在图表中的显示位置
-plt.legend([u'数量'], loc='upper right')
-#设置背景网格线的颜色，样式，尺寸和透明度
-plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
-#设置y轴数据分类名称
-plt.yticks(a,('1','2-5','6-9','10-13','14-17',u'18以上'))
-#显示图表
-plt.show()
-'''
-'''
-#绘制房源面积分布条形图
-#设置条形图的字体大小
-plt.rc('font', family='SimHei', size=12)
-#设置条形图的尺寸
-plt.figure(figsize=(8,6))
-#创建一个一维数组赋值给a
-a = np.arange(1,12,1)
-#创建条形图，参数为面积分组，颜色，透明度和图表边框
-plt.barh(a,mianji_group,color='#052B6C',alpha=0.8,align='center',edgecolor='white')
-#设置y轴标题
-plt.ylabel(u'面积分组')
-#设置x轴标题
-plt.xlabel(u'数量')
-#设置坐标轴的刻度
-plt.xlim(0,9000)
-plt.ylim(0,12)
-#设置图表标题
-plt.title(u'房源面积分布情况')
-#设置图例，并设置在图表中的显示位置
-plt.legend([u'数量'], loc='upper right')
-#设置背景网格线的颜色，样式，尺寸和透明度
-plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
-#设置y轴数据分类名称
-plt.yticks(a,tuple(mianji_group_label))
-#显示图表
-plt.show()
-'''
-
-'''
-#绘制房源朝向分布条形图
-#设置条形图的字体大小
-plt.rc('font', family='SimHei', size=12)
-#设置条形图的尺寸
-plt.figure(figsize=(8,6))
-#创建一个一维数组赋值给a
-a = np.arange(1,12,1)
-#创建条形图，参数为朝向分组，颜色，透明度和图表边框
-plt.barh(a,chaoxiang_group,color='#052B6C',alpha=0.8,align='center',edgecolor='white')
-#设置y轴标题
-plt.ylabel(u'朝向分组')
-#设置x轴标题
-plt.xlabel(u'数量')
-#设置坐标轴的刻度
-plt.xlim(0,6000)
-plt.ylim(0,12)
-#设置图表标题
-plt.title(u'房源朝向分布情况')
-#设置图例，并设置在图表中的显示位置
-plt.legend([u'数量'], loc='upper right')
-#设置背景网格线的颜色，样式，尺寸和透明度
-plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
-#设置y轴数据分类名称
-plt.yticks(a,(u'东',u'东北',u'东南',u'东西',u'北',u'南',u'南北',u'没有注明',u'西',u'西北',u'西南'))
-#显示图表
-plt.show()
-'''
-

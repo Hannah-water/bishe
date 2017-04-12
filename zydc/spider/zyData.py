@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 #导入数值计算库
 import numpy as np
 #导入mysql.py，连接数据库
-import mysql
+from spider import mysql
 #导入多进程库
 from multiprocessing import Pool
 import gc
@@ -29,7 +29,7 @@ def getHouseInfo(houseUrl):
 		#s = requests.session()
 	  	#s.keep_alive = False
 		#requests.adapters.DEFAULT_RETRIES = 5
-		request = requests.get(url=url, headers=headers)
+		request = requests.post(url=url, headers=headers)
 		house_html = request.content
 		zy_fang = BeautifulSoup(house_html, 'html.parser')
 		#获取房源带看数
@@ -70,7 +70,8 @@ def getHouseInfo(houseUrl):
 		"price_area": houseinfo1,
 		"houseinfo": houseinfo2,
 		}
-		mysql.insertData('zydc', house_dict)
+		#mysql.insertData('zydc', house_dict)
+		return house_dict
 	except Exception as e:
 		if hasattr(e, "reason"):
 			print "获取数据失败，错误原因",e.reason
@@ -86,7 +87,7 @@ def main():
 	#从数据库中获取所有房源url
 	map(houseurls.extend, mysql.selectData('houseurl','url'))
 	#进程池，4个进程并发
-	pool = Pool(processes=4)
+	pool = Pool(processes=8)
 	#获取房源所有链接
 	poolurl = pool.map(getHouseUrl, houseurls)
 	#去除列表重复元素
@@ -95,7 +96,9 @@ def main():
 	#for i in range(0,len(poolurl),500):
 	#	pool.map(getHouseInfo, poolurl[i:i+500])
 	#	time.sleep(5)
-	pool.map(getHouseInfo, poolurl)
+	info = pool.map(getHouseInfo, poolurl)
+	cols = ', '.join(info[0].keys())
+	mysql.insertData('zydc', cols, info)
 	#关闭进程池，进程池不会再创建新的进程
 	pool.close()
 	#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束

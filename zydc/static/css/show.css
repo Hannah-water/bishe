@@ -21,12 +21,22 @@ header section {
 header section h1 {
 	text-align: center;
 	line-height: 80px;
-	padding: 0 20px
+	padding: 0 20px;
+	font-size: 40px;
+}
+header section a {
+	display: block;
+	cursor: pointer;
+	text-decoration: none;
+	margin: 18px;
+	padding: 10px;
+	background: #e6b891;
+	color: #aa6969;
 }
 nav {
 	position: fixed;
 	float: left;
-	margin-top: 150px;
+	margin-top: 120px;
 	margin-left: 100px;
 }
 nav a {
@@ -45,4 +55,15 @@ main {
 	margin-top: 100px;
 	margin-left: 300px;
 	z-index: -1;
+}
+main input {
+	width: 200px;
+	cursor: pointer;
+	margin-top: 35px;
+	padding: 20px;
+}
+main span {
+	margin-left: 125px;
+	line-height: 40px;
+	color: #aa6969;
 }

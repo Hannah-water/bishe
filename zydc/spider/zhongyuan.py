@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 #导入数值计算库
 import numpy as np
 #导入mysql.py，连接数据库
-import mysql
+from spider import mysql
+#import mysql
 #导入多进程库
 from multiprocessing import Pool
 import gc
@@ -43,7 +44,7 @@ class ZYDC:
 	def getPage(self,pageIndex):
 		try:
 			url = self.baseUrl + self.page + str(pageIndex) + '/'
-			request = requests.get(url=url, headers=self.headers)
+			request = requests.post(url=url, headers=self.headers)
 			htm = request.content
 			zy = BeautifulSoup(htm, 'html.parser')
 			houseurls = zy.find_all('a', attrs={'class':'cBlueB'})
@@ -59,17 +60,18 @@ class ZYDC:
 	#获取所有页面的房源链接
 	def getAllUrl(self,pageIndex):
 		urls = self.getPage(pageIndex)
-		print "正在爬取第",pageIndex,"页的房源链接"
+		#print "正在爬取第",pageIndex,"页的房源链接"
 		return urls
 
 	#主函数
 	def main(self,pageIndex):
-		f_html = open('houseUrl.txt','w')
+		f_html = open('spider/houseUrl.txt','w')
 		#进程池，4个进程并发
-		pool = Pool(processes=4)
+		pool = Pool(processes=8)
 		#for page in pageIndex:
 		#	print pool.apply_async(self.getAllUrl, (pageIndex,))
 		poolurl = pool.map(self.getAllUrl, pageIndex)
+		#print len(poolurl)
 		urls = []
 		#将列表中的子列表合并
 		map(urls.extend, poolurl)
@@ -83,15 +85,22 @@ class ZYDC:
 		#连接数据库
 		self.mysql = mysql.Mysql()
 		self.mysql.cur.execute("truncate table houseurl")
+		#for i in range(0,len(urls)):
+		#	url_dict = {"url": urls[i],}
+		#print len(urls)
 		#将获取的url存入数据库
+		param = []
 		for i in range(0,len(urls)):
 			url_dict = {"url": urls[i],}
-			self.mysql.insertData('houseurl', url_dict)
+			param.append(url_dict)
+		#print param
+		cols = ', '.join(param[0].keys())
+		self.mysql.insertData('houseurl', cols, param)
 
 		
 #执行函数
 if __name__ == "__main__":
-	start = time.clock()
+	start = time.time()
 	print time.strftime('[%Y-%m-%d %H:%M:%S]',time.localtime(time.time()))
 	#设置列表页固定部分
 	url = 'http://sz.centanet.com/ershoufang/'
@@ -116,6 +125,6 @@ if __name__ == "__main__":
 	spider = ZYDC(url,page,headers)
 	spider.main(pages)
 	print time.strftime('[%Y-%m-%d %H:%M:%S]',time.localtime(time.time()))
-	end = time.clock()
+	end = time.time()
 	print str(end-start) + 's'
 

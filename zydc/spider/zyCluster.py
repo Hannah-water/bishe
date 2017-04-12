@@ -1,6 +1,6 @@
 #-*-coding:utf-8 -*-
 #导入zyPandas.py
-import zyPandas
+from spider import zyPandas
 #导入pandas库
 import pandas as pd
 #导入图表库
@@ -45,11 +45,39 @@ plt.ylabel(u'房源面积（平米）')
 #设置坐标轴的刻度
 plt.xlim(0,20000)
 #设置图表标题
-plt.title(u'房价-面积-带看数聚类分析')
+plt.title(u'房价-面积聚类分析')
 #设置背景网格线的颜色，样式，尺寸和透明度
 plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
 #保存图表
-plt.savefig('zyImage/cluster.png')
-plt.savefig('zydc/static/images/cluster.png')
+#plt.savefig('zyImage/cluster.png')
+plt.savefig('static/images/cluster.png')
 #显示图表
-plt.show()
+#plt.show()
+plt.close()
+
+#绘制房源总价与面积聚类结果的散点图
+#设置条形图的字体大小
+plt.rc('font', family='SimHei', size=12)
+#设置条形图的尺寸
+plt.figure(figsize=(12,9))
+#创建散点图
+plt.scatter(house0['houseprice_num'], house0['mianji_num'],color='#99CC01',marker='+',linewidth=2,alpha=0.8)	#绿
+plt.scatter(house1['houseprice_num'], house1['mianji_num'],color='#FE0000',marker='+',linewidth=2,alpha=0.8)	#红
+plt.scatter(house2['houseprice_num'], house2['mianji_num'],color='#0000FE',marker='+',linewidth=2,alpha=0.8)	#蓝
+#设置x轴标题
+plt.xlabel(u'房源总价（万元）')
+#设置y轴标题
+plt.ylabel(u'房源面积（平米）')
+#设置坐标轴的刻度
+plt.xlim(0,7500)
+plt.ylim(0,800)
+#设置图表标题
+plt.title(u'房价-面积聚类分析')
+#设置背景网格线的颜色，样式，尺寸和透明度
+plt.grid(color='#95a5a6',linestyle='--', linewidth=1,axis='y',alpha=0.4)
+#保存图表
+#plt.savefig('zyImage/cluster.png')
+plt.savefig('static/images/cluster_plus.png')
+#显示图表
+#plt.show()
+plt.close()
