@@ -76,7 +76,6 @@ house['mianji_num'] = house['mianji_num'].astype(float)
 house['mianji_num'].min(),house['mianji_num'].max()
 #对房源面积进行分组
 mbins = range(0,501,50) + [900]
-#mianji_group = [u'小于50','50-100','100-150','150-200','200-250','250-300','300-350','350-400','400-450','450-500','500-550','550-600','600-650','650-700','700-750','750-800','800-850','850-900']
 mianji_group_label = [u'小于50','50-100','100-150','150-200','200-250','250-300','300-350','350-400','400-450','450-500',u'500以上']
 house['mianji_group'] = pd.cut(house['mianji_num'], mbins, labels=mianji_group_label)
 mianji_group = house.groupby('mianji_group')['mianji_group'].agg(len)
@@ -122,7 +121,7 @@ house['niandai_num'] = house['niandai_num'].astype(int)
 #按房源年代类别进行汇总
 niandai_group = house.groupby('niandai_num')['niandai_num'].agg(len)
 
-house.to_csv('spider/house.csv',encoding='utf8')
+#house.to_csv('spider/house.csv',encoding='utf8')
 '''
 #按房源小区类别进行汇总
 xiaoqu_group = house.groupby('xiaoqu')['xiaoqu'].agg(len)

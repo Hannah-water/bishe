@@ -66,15 +66,14 @@ class ZYDC:
 	#主函数
 	def main(self,pageIndex):
 		f_html = open('spider/houseUrl.txt','w')
-		#进程池，4个进程并发
-		pool = Pool(processes=8)
-		#for page in pageIndex:
-		#	print pool.apply_async(self.getAllUrl, (pageIndex,))
+		#进程池，10个进程并发
+		pool = Pool(processes=10)
 		poolurl = pool.map(self.getAllUrl, pageIndex)
-		#print len(poolurl)
 		urls = []
 		#将列表中的子列表合并
 		map(urls.extend, poolurl)
+		#去除列表重复元素
+		urls = list(set(urls))
 		#join()将列表转为字符串
 		f_html.write('\n'.join(urls))
 		#关闭进程池，进程池不会再创建新的进程
@@ -85,17 +84,15 @@ class ZYDC:
 		#连接数据库
 		self.mysql = mysql.Mysql()
 		self.mysql.cur.execute("truncate table houseurl")
-		#for i in range(0,len(urls)):
-		#	url_dict = {"url": urls[i],}
-		#print len(urls)
 		#将获取的url存入数据库
 		param = []
 		for i in range(0,len(urls)):
 			url_dict = {"url": urls[i],}
 			param.append(url_dict)
-		#print param
 		cols = ', '.join(param[0].keys())
 		self.mysql.insertData('houseurl', cols, param)
+		self.mysql.cur.close()
+		self.mysql.db.close()
 
 		
 #执行函数

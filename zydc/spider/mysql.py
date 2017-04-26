@@ -23,18 +23,10 @@ class Mysql:
 			self.db.set_character_set('utf8')
 			q= []
 			for x in param:
-				#cols = ', '.join(x.keys())
 				values = '"," '.join(x.values())
 				q.append(('"'+values+'"',))
 			try:
 				sql = "INSERT INTO {}({}) VALUES(%s)".format(table,cols)
-				#print sql
-				#print q
-				#for y in q:
-				#	sql = "INSERT INTO %s(%s) VALUES(%s) ON DUPLICATE KEY UPDATE %s=%s" % y
-				#	result = self.cur.execute(sql)
-				#	insert_id = self.db.insert_id()
-				#	self.db.commit()
 				result = self.cur.executemany(sql,q)
 				insert_id = self.db.insert_id()
 				self.db.commit()
@@ -53,9 +45,9 @@ class Mysql:
 			#		print self.getCurrentTime(),"插入数据失败，原因%d: %s" % (e.args[0], e.args[1])
 		except MySQLdb.Error,e:
 			print self.getCurrentTime(),"数据库错误，原因%d: %s" % (e.args[0], e.args[1])
-		finally:
-			self.cur.close()
-			self.db.close()
+		#finally:
+		#	self.cur.close()
+		#	self.db.close()
 
 
 	#查询数据

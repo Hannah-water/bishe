@@ -21,15 +21,16 @@ mysql = mysql.Mysql()
 #获取某一房源的具体信息
 def getHouseInfo(houseUrl):
 	try:
-		url = 'http://sz.centanet.com' + str(houseUrl)
-		#print url
+		url = 'http://sz.centanet.com' + houseUrl.replace('\"','')
 		headers = {
 		'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
 		}
-		#s = requests.session()
-	  	#s.keep_alive = False
-		#requests.adapters.DEFAULT_RETRIES = 5
-		request = requests.post(url=url, headers=headers)
+		#设置重传次数
+		s = requests.session()
+	  	s.keep_alive = False
+		requests.adapters.DEFAULT_RETRIES = 5
+		#请求网页
+		request = requests.post(url=url, headers=headers, timeout=1)
 		house_html = request.content
 		zy_fang = BeautifulSoup(house_html, 'html.parser')
 		#获取房源带看数
@@ -71,40 +72,42 @@ def getHouseInfo(houseUrl):
 		"houseinfo": houseinfo2,
 		}
 		#mysql.insertData('zydc', house_dict)
+		#print house_dict
 		return house_dict
 	except Exception as e:
 		if hasattr(e, "reason"):
 			print "获取数据失败，错误原因",e.reason
 			return None
 
-#获取所有房源链接
-def getHouseUrl(houseUrl):
-	return houseUrl
-
 #主函数
 def main():
 	houseurls = []
 	#从数据库中获取所有房源url
 	map(houseurls.extend, mysql.selectData('houseurl','url'))
-	#进程池，4个进程并发
-	pool = Pool(processes=8)
-	#获取房源所有链接
-	poolurl = pool.map(getHouseUrl, houseurls)
+	#进程池，22个进程并发
+	pool = Pool(processes=14)
 	#去除列表重复元素
-	poolurl = list(set(poolurl))
+	houseurls = list(set(houseurls))
 	#获取链接所指向的房源具体信息
-	#for i in range(0,len(poolurl),500):
-	#	pool.map(getHouseInfo, poolurl[i:i+500])
-	#	time.sleep(5)
-	info = pool.map(getHouseInfo, poolurl)
-	cols = ', '.join(info[0].keys())
-	mysql.insertData('zydc', cols, info)
+	hinfo = [info for info in pool.map(getHouseInfo, houseurls[0:1000]) if info not in [None]]
+	cols = ', '.join(hinfo[0].keys())
+	mysql.insertData('zydc', cols, hinfo)
+	j = 0
+	for i in range(1,len(houseurls)/1000):
+		print i
+		j = i * 1000
+		hinfo = [info for info in pool.map(getHouseInfo, houseurls[j:j+1000]) if info not in [None]]
+		mysql.insertData('zydc', cols, hinfo)
+		time.sleep(1)
+		print j
+	hinfo = [info for info in pool.map(getHouseInfo, houseurls[j+1000:]) if info not in [None]]
+	mysql.insertData('zydc', cols, hinfo)
+	mysql.cur.close()
+	mysql.db.close()
 	#关闭进程池，进程池不会再创建新的进程
 	pool.close()
 	#等待进程池中的全部进程执行完毕，防止主进程再worker进程结束前结束
 	pool.join()
-
-
 
 #执行函数
 if __name__ == "__main__":
