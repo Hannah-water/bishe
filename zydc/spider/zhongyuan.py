@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 #导入mysql.py，连接数据库
 from spider import mysql
-#import mysql
 #导入多进程库
 from multiprocessing import Pool
 import gc
@@ -50,7 +49,7 @@ class ZYDC:
 			houseurls = zy.find_all('a', attrs={'class':'cBlueB'})
 			urls = []
 			for x in houseurls:
-				urls.append(x.get('href'))
+				urls.append(self.baseUrl[:-12] + x.get('href'))
 			return urls
 		except Exception as e:
 			if hasattr(e, "reason"):
@@ -74,6 +73,7 @@ class ZYDC:
 		map(urls.extend, poolurl)
 		#去除列表重复元素
 		urls = list(set(urls))
+		#print urls
 		#join()将列表转为字符串
 		f_html.write('\n'.join(urls))
 		#关闭进程池，进程池不会再创建新的进程

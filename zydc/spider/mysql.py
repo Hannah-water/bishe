@@ -31,10 +31,10 @@ class Mysql:
 				insert_id = self.db.insert_id()
 				self.db.commit()
 				#判断是否执行成功
-				#if result:
-				#	return insert_id
-				#else:
-				#	return 0
+				if result:
+					return insert_id
+				else:
+					return 0
 			except MySQLdb.Error,e:
 				#发生错误时回滚
 				self.db.rollback()

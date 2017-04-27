@@ -21,7 +21,7 @@ mysql = mysql.Mysql()
 #获取某一房源的具体信息
 def getHouseInfo(houseUrl):
 	try:
-		url = 'http://sz.centanet.com' + houseUrl.replace('\"','')
+		url = '' + houseUrl.replace('\"','')
 		headers = {
 		'User-Agent':'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
 		}
